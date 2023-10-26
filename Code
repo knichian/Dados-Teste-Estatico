@@ -1,0 +1,219 @@
+// INCLUSÃO DE BIBLIOTECAS
+#include <Wire.h>
+#include "RTClib.h"
+#include "HX711.h"
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
+#include <Pushbutton.h>
+
+int BTN = 32;
+
+Pushbutton button(BTN);
+
+long int cont = 0;
+
+unsigned long previousmillis = 0;
+
+const long intervalo = 100; // Precisão Leitura Dados milissegundos
+
+String dir = "";
+String filedir = "";
+int pasta = 1;
+
+int LED = 2;
+bool estado = false;
+///////////////////////// DADOS DO MÓDULO RTC //////////////////////////////
+
+RTC_DS3231 rtc; // OBJETO DO TIPO RTC_DS3231
+
+// DECLARAÇÃO DOS DIAS DA SEMANA
+char daysOfTheWeek[7][12] = {"Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
+
+///////////////////////// DADOS DO MÓDULO SDCard //////////////////////////////
+
+int CS = 5;
+
+///////////////////////// DADOS DA CÉLULA DE CARGA //////////////////////////////
+
+#define CELULA_DT 26
+#define CELULA_SCK 27
+
+HX711 escala;
+
+float fator_calib = -208000; // Coloque aqui o valor encontrado na calibração
+
+void writeFile(fs::FS &fs, String path, String message)
+{
+  Serial.printf("Writing file: %s\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if (!file)
+  {
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+  if (file.print(message))
+  {
+    Serial.println("File written");
+    digitalWrite(LED, HIGH);
+  }
+  else
+  {
+    Serial.println("Write failed");
+    digitalWrite(LED, LOW);
+  }
+  file.close();
+}
+
+void appendFile(fs::FS &fs, String path, String message)
+{
+  Serial.printf("Appending to file: %s\n", path);
+
+  File file = fs.open(path, FILE_APPEND);
+  if (!file)
+  {
+    Serial.println("Failed to open file for appending");
+    return;
+  }
+  if (file.print(message))
+  {
+    Serial.println("Message appended");
+    digitalWrite(LED, HIGH);
+  }
+  else
+  {
+    Serial.println("Append failed");
+    digitalWrite(LED, LOW);
+  }
+  file.close();
+}
+
+void createDir(fs::FS &fs, String path) {
+  Serial.printf("Creating Dir: %s\n", path);
+  if (fs.mkdir(path)) {
+    Serial.println("Dir created");
+  } else {
+    Serial.println("mkdir failed");
+  }
+}
+
+String data()
+{
+
+  DateTime now = rtc.now();
+  String data = "";
+
+  data.concat(String(now.day(), DEC));
+  data.concat('/');
+  data.concat(String(now.month(), DEC));
+  data.concat('/');
+  data.concat(String(now.year(), DEC));
+  data.concat(';');
+  data.concat(String(now.hour(), DEC));
+  data.concat(':');
+  data.concat(String(now.minute(), DEC));
+  data.concat(':');
+  data.concat(String(now.second(), DEC));
+
+  return data;
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  pinMode(BTN, INPUT);
+  pinMode(LED, OUTPUT);
+
+  ///////////////////////// DADOS DO MÓDULO RTC //////////////////////////////
+
+  if (!rtc.begin())
+  { // SE O RTC NÃO FOR INICIALIZADO, FAZ
+
+    Serial.println("DS3231 não encontrado"); // IMPRIME O TEXTO NO MONITOR SERIAL
+    while (1)
+      ; // SEMPRE ENTRE NO LOOP
+  }
+  if (rtc.lostPower())
+  { // SE RTC FOI LIGADO PELA PRIMEIRA VEZ / FICOU SEM ENERGIA / ESGOTOU A BATERIA, FAZ
+    Serial.println("DS3231 OK!"); // IMPRIME O TEXTO NO MONITOR SERIAL
+
+    // REMOVA O COMENTÁRIO DE UMA DAS LINHAS ABAIXO PARA INSERIR AS INFORMAÇÕES ATUALIZADAS EM SEU RTC
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // CAPTURA A DATA E HORA EM QUE O SKETCH É COMPILADO
+    // rtc.adjust(DateTime(2023, 10, 2, 17, 36, 00)); //(ANO), (MÊS), (DIA), (HORA), (MINUTOS), (SEGUNDOS)
+  }
+  delay(100); // INTERVALO DE 100 MILISSEGUNDOS
+
+  ///////////////////////// DADOS DO MÓDULO SDCard //////////////////////////////
+
+  if (!SD.begin(CS))
+  {
+    Serial.println("Falha no SDcard");
+    return;
+  }
+
+  uint8_t cardType = SD.cardType();
+
+  if (cardType == CARD_NONE)
+  {
+    Serial.println("Nenhum Cartao conectado");
+    return;
+  }
+
+  String mensagemSetup = "\n";
+
+  Serial.println("Escrevendo Data no Arquivo Dados.txt"); // Imprime na tela
+  dir = "/";
+  dir.concat(String(pasta));
+  createDir(SD, dir);
+  filedir = "";
+  filedir = dir + "/Dados.txt";
+  writeFile(SD, filedir, " ");
+
+  ///////////////////////// DADOS DA CÉLULA DE CARGA //////////////////////////////
+
+  escala.begin(CELULA_DT, CELULA_SCK);
+  escala.set_scale(fator_calib); // Ajusta a escala
+  escala.tare();                 // Ajusta o zero da escala
+}
+
+void loop()
+{
+  unsigned long currentmillis = millis();
+  String leitura = "\n";
+
+  if (button.getSingleDebouncedPress())
+  {
+    pasta += 1;
+    dir = "/";
+    dir.concat(String(pasta));
+    createDir(SD, dir);
+    filedir = "";
+    filedir = dir + "/Dados.txt";
+    cont = 0;
+  }
+  else
+  {
+    if (currentmillis - previousmillis >= intervalo)
+    {
+
+      String dataAgora = data();
+
+      Serial.print(dataAgora);
+      leitura.concat(dataAgora);
+      Serial.print(";");
+      leitura.concat(";");
+      Serial.print(escala.get_units(1), 3);
+      leitura.concat(String(escala.get_units(1), 3));
+      Serial.print(";");
+      leitura.concat(";");
+      Serial.println(cont);
+      leitura.concat(cont);
+      appendFile(SD, filedir, leitura);
+
+
+      cont = cont + 100;
+      previousmillis = currentmillis;
+    }
+  }
+}
