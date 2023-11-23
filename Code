@@ -6,6 +6,9 @@
 #include "SD.h"
 #include "SPI.h"
 #include <Pushbutton.h>
+#include "BluetoothSerial.h"
+
+BluetoothSerial SerialBT;
 
 int BTN = 32;
 
@@ -122,6 +125,7 @@ String data()
 void setup()
 {
   Serial.begin(115200);
+  SerialBT.begin("Teste-Estatico");
   pinMode(BTN, INPUT);
   pinMode(LED, OUTPUT);
 
@@ -200,14 +204,19 @@ void loop()
       String dataAgora = data();
 
       Serial.print(dataAgora);
+      SerialBT.print(dataAgora);
       leitura.concat(dataAgora);
       Serial.print(";");
+      SerialBT.print(";");
       leitura.concat(";");
       Serial.print(escala.get_units(1), 3);
+      SerialBT.print(escala.get_units(1), 3);
       leitura.concat(String(escala.get_units(1), 3));
       Serial.print(";");
+      SerialBT.print(";");
       leitura.concat(";");
       Serial.println(cont);
+      SerialBT.println(cont);
       leitura.concat(cont);
       appendFile(SD, filedir, leitura);
 
