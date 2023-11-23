@@ -48,7 +48,7 @@ float fator_calib = -208000; // Coloque aqui o valor encontrado na calibração
 
 void writeFile(fs::FS &fs, String path, String message)
 {
-  Serial.printf("Writing file: " + path);
+  Serial.print("Writing file: " + path);
 
   File file = fs.open(path, FILE_WRITE);
   if (!file)
@@ -71,7 +71,7 @@ void writeFile(fs::FS &fs, String path, String message)
 
 void appendFile(fs::FS &fs, String path, String message)
 {
-  Serial.printf("Appending to file: " + path);
+  Serial.print("Appending to file: " + path);
 
   File file = fs.open(path, FILE_APPEND);
   if (!file)
@@ -93,7 +93,7 @@ void appendFile(fs::FS &fs, String path, String message)
 }
 
 void createDir(fs::FS &fs, String path) {
-  Serial.printf("Creating Dir: " + path);
+  Serial.print("Creating Dir: " + path);
   if (fs.mkdir(path)) {
     Serial.println("\nDir created");
   } else {
