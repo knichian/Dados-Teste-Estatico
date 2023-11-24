@@ -18,7 +18,7 @@ long int cont = 0;
 
 unsigned long previousmillis = 0;
 
-const long intervalo = 100; // Precisão Leitura Dados milissegundos
+const long intervalo = 10; // Precisão Leitura Dados milissegundos
 
 String dir = "";
 String filedir = "";
@@ -44,7 +44,7 @@ int CS = 5;
 
 HX711 escala;
 
-float fator_calib = -208000; // Coloque aqui o valor encontrado na calibração
+float fator_calib = -178000; // Coloque aqui o valor encontrado na calibração
 
 void writeFile(fs::FS &fs, String path, String message)
 {
@@ -209,9 +209,10 @@ void loop()
       Serial.print(";");
       SerialBT.print(";");
       leitura.concat(";");
-      Serial.print(escala.get_units(1), 3);
-      SerialBT.print(escala.get_units(1), 3);
-      leitura.concat(String(escala.get_units(1), 3));
+      float peso = escala.get_units(1);
+      Serial.print(peso, 3);
+      SerialBT.print(peso, 3);
+      leitura.concat(String(peso, 3));
       Serial.print(";");
       SerialBT.print(";");
       leitura.concat(";");
@@ -221,7 +222,7 @@ void loop()
       appendFile(SD, filedir, leitura);
 
 
-      cont = cont + 100;
+      cont = cont + 10;
       previousmillis = currentmillis;
     }
   }
