@@ -222,7 +222,7 @@ void loop()
       appendFile(SD, filedir, leitura);
 
 
-      cont = cont + 10;
+      cont = cont + 100;
       previousmillis = currentmillis;
     }
   }
