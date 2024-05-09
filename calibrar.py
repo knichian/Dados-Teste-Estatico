@@ -15,3 +15,4 @@ peso = int(input('Digite o peso real do objeto: '))
 calibracao = media/peso
 
 print('O fator de calibração é: ', calibracao)
+arq.close()
