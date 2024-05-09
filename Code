@@ -44,11 +44,11 @@ int CS = 5;
 
 HX711 escala;
 
-float fator_calib = -178000; // Coloque aqui o valor encontrado na calibração
+float fator_calib = -48500; // Coloque aqui o valor encontrado na calibração
 
 void writeFile(fs::FS &fs, String path, String message)
 {
-  Serial.print("Writing file: " + path);
+  //Serial.print("Writing file: " + path);
 
   File file = fs.open(path, FILE_WRITE);
   if (!file)
@@ -58,7 +58,7 @@ void writeFile(fs::FS &fs, String path, String message)
   }
   if (file.print(message))
   {
-    Serial.println("\nFile written");
+    //Serial.println("\nFile written");
     digitalWrite(LED, HIGH);
   }
   else
@@ -71,7 +71,7 @@ void writeFile(fs::FS &fs, String path, String message)
 
 void appendFile(fs::FS &fs, String path, String message)
 {
-  Serial.print("Appending to file: " + path);
+  //Serial.print("Appending to file: " + path);
 
   File file = fs.open(path, FILE_APPEND);
   if (!file)
@@ -81,7 +81,7 @@ void appendFile(fs::FS &fs, String path, String message)
   }
   if (file.print(message))
   {
-    Serial.println("\nMessage appended");
+    //Serial.println("\nMessage appended");
     digitalWrite(LED, HIGH);
   }
   else
