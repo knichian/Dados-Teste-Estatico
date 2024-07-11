@@ -30,9 +30,6 @@ bool estado = false;
 
 RTC_DS3231 rtc; // OBJETO DO TIPO RTC_DS3231
 
-// DECLARAÇÃO DOS DIAS DA SEMANA
-char daysOfTheWeek[7][12] = {"Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
-
 ///////////////////////// DADOS DO MÓDULO SDCard //////////////////////////////
 
 int CS = 5;
@@ -44,7 +41,7 @@ int CS = 5;
 
 HX711 escala;
 
-float fator_calib = -48500; // Coloque aqui o valor encontrado na calibração
+float fator_calib = -253369; // Coloque aqui o valor encontrado na calibração
 
 void writeFile(fs::FS &fs, String path, String message)
 {
@@ -102,6 +99,27 @@ void createDir(fs::FS &fs, String path) {
 }
 
 String data()
+{
+
+  DateTime now = rtc.now();
+  String data = "";
+
+  data.concat(String(now.day(), DEC));
+  data.concat('-');
+  data.concat(String(now.month(), DEC));
+  data.concat('-');
+  data.concat(String(now.year(), DEC));
+  data.concat(';');
+  data.concat(String(now.hour(), DEC));
+  data.concat('-');
+  data.concat(String(now.minute(), DEC));
+  data.concat('-');
+  data.concat(String(now.second(), DEC));
+
+  return data;
+}
+
+String dataa()
 {
 
   DateTime now = rtc.now();
@@ -168,7 +186,7 @@ void setup()
 
   Serial.println("Escrevendo Data no Arquivo Dados.txt"); // Imprime na tela
   dir = "/";
-  dir.concat(String(pasta));
+  dir.concat(data());
   createDir(SD, dir);
   filedir = "";
   filedir = dir + "/Dados.txt";
@@ -188,9 +206,8 @@ void loop()
 
   if (button.getSingleDebouncedPress())
   {
-    pasta += 1;
     dir = "/";
-    dir.concat(String(pasta));
+    dir.concat(data());
     createDir(SD, dir);
     filedir = "";
     filedir = dir + "/Dados.txt";
@@ -201,7 +218,7 @@ void loop()
     if (currentmillis - previousmillis >= intervalo)
     {
 
-      String dataAgora = data();
+      String dataAgora = dataa();
 
       Serial.print(dataAgora);
       SerialBT.print(dataAgora);
@@ -222,7 +239,7 @@ void loop()
       appendFile(SD, filedir, leitura);
 
 
-      cont = cont + 100;
+      cont = cont + 10;
       previousmillis = currentmillis;
     }
   }
