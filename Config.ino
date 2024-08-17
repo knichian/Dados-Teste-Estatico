@@ -3,7 +3,7 @@
 HX711 escala;    
 
 void setup() {
-  escala.begin (26, 27);
+  escala.begin(26, 27);
   Serial.begin(115200);
   escala.set_scale();            
   escala.tare();
