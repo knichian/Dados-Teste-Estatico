@@ -142,7 +142,7 @@ String dataa()
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
   SerialBT.begin("Teste-Estatico");
   pinMode(BTN, INPUT);
   pinMode(LED, OUTPUT);
