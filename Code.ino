@@ -41,7 +41,7 @@ int CS = 5;
 
 HX711 escala;
 
-float fator_calib = -253369; // Coloque aqui o valor encontrado na calibração
+float fator_calib = 260006; // Coloque aqui o valor encontrado na calibração
 
 void writeFile(fs::FS &fs, String path, String message)
 {
@@ -206,6 +206,7 @@ void loop()
 
   if (button.getSingleDebouncedPress())
   {
+    escala.tare();
     dir = "/";
     dir.concat(data());
     createDir(SD, dir);
@@ -226,7 +227,7 @@ void loop()
       Serial.print(";");
       SerialBT.print(";");
       leitura.concat(";");
-      float peso = escala.get_units(1);
+      float peso = escala.get_units();
       Serial.print(peso, 3);
       SerialBT.print(peso, 3);
       leitura.concat(String(peso, 3));
