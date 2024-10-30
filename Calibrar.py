@@ -1,5 +1,5 @@
 data = []
-arq = open('Analise de dados/Dados.txt', 'r').read()
+arq = open('Equipamentos/Dados-Teste-Estatico/Config/Dados.txt', 'r').read()
 lines = arq.split('\n')
 for line in lines:
     data.append(line)
@@ -10,7 +10,7 @@ for i in range(len(data)):
 
 media = soma/len(data)
 
-peso = int(input('Digite o peso real do objeto: '))
+peso = float(input('Digite o peso real do objeto: '))
 
 calibracao = media/peso
 
