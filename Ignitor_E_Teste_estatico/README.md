@@ -42,7 +42,7 @@ Este projeto utiliza um ESP32 para controlar a ignição de um motor de foguete 
 ## Comandos
 
 - `A`: Aguardando comando
-- `C`: Iniciar contagem e salvar dados
+- `C`: Iniciar contagem
 - `D`: Parar de salvar dados
 - `E`: Tarar célula de carga
 - `1`: Ativar relé
