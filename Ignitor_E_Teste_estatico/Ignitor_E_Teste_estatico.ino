@@ -9,7 +9,7 @@
 #include "BluetoothSerial.h" // Biblioteca para Bluetooth
 
 // Definições de pinos e constantes
-#define RELE_PIN 25        // Pino de controle do relé
+#define RELE_PIN 25       // Pino de controle do relé
 #define BTN_PIN 33        // Pino do botão
 #define LED_PIN 4         // Pino do LED
 #define CS_PIN 5          // Pino do cartão SD
@@ -25,7 +25,7 @@ HX711 escala;               // Célula de carga
 BluetoothSerial SerialBT;   // Bluetooth
 
 // Variáveis globais
-const float fator_calib = 260443; // Valor encontrado na calibração
+const float fator_calib = 277306; // Valor encontrado na calibração
 unsigned long previousMillis = 0; // Controle de tempo
 long int cont = 0;                // Contador de leituras
 String dir = "";                  // Diretório
@@ -33,6 +33,8 @@ String filedir = "";              // Arquivo
 char cmd;                         // Comando
 bool state = false;               // Estado
 bool select_loop = false;         // Modo de operação
+String leitura = "";              // Leitura dos dados
+String msg = "";                  // Mensagem de leitura
 
 void setup()
 {
@@ -45,7 +47,7 @@ void setup()
   pinMode(SELECT_PIN, INPUT_PULLUP);
   pinMode(LED_PIN, OUTPUT);
   pinMode(RELE_PIN, OUTPUT);
-  digitalWrite(RELE_PIN, LOW);
+  digitalWrite(RELE_PIN, HIGH);
 
   // Definição do modo de operação
   select_loop = digitalRead(SELECT_PIN) == HIGH; // Seleção de modo, HIGH = Ignitor + Teste Estático, LOW = Apenas ignitor
@@ -114,7 +116,8 @@ void setupSDCard()
   // Criação de diretório e arquivo para armazenamento de dados
   dir = "/" + getCurrentDate();
   createDir(SD, dir);
-  filedir = dir + "/" + getCurrentDate() + ".txt";
+  filedir = dir + "/" + getCurrentDate() + "_raw.txt";
+  writeFile(SD, filedir, "\n");
 }
 
 void setupHX711()
@@ -131,8 +134,8 @@ void handleButtonPress()
   escala.tare();
   dir = "/" + getCurrentDate();
   createDir(SD, dir);
-  filedir = dir + "/" + getCurrentDate() + ".txt";
-  writeFile(SD, filedir, "Data;Hora;Empuxo;Tempo\n");
+  filedir = dir + "/" + getCurrentDate() + "_raw.txt";
+  writeFile(SD, filedir, "\n");
   cont = 0;
 }
 
@@ -142,9 +145,8 @@ void logData(unsigned long millisec)
   String dataAgora = getCurrentDateTime();
   float peso = escala.get_units();
   cont += millisec;
-  String leitura = dataAgora + ";" + String(peso, 3) + ";" + String(cont);
-
-  // printToSerials(leitura);
+  msg = String(peso, 3) + ";" + String(cont);
+  leitura = dataAgora + ";" + msg;
 
   appendFile(SD, filedir, leitura + "\n");
 }
@@ -211,7 +213,7 @@ void writeFile(fs::FS &fs, String path, String message)
   {
     while (true)
     {
-      printToSerials("Falha ao escrever no arquivo");
+      printToSerials("Falha ao escrever no arquivo - w");
     }
     digitalWrite(LED_PIN, LOW);
   }
@@ -238,7 +240,7 @@ void appendFile(fs::FS &fs, const String &path, const String &message)
   {
     while (true)
     {
-      printToSerials("Falha ao escrever no arquivo");
+      printToSerials("Falha ao escrever no arquivo - a");
     }
     digitalWrite(LED_PIN, LOW);
   }
@@ -267,7 +269,11 @@ void printToSerials(const String &message)
 
 void ign_estatico()
 {
-  // Função de ignição e teste estático
+  unsigned long currentMillis = millis();
+  unsigned long millisec = currentMillis - previousMillis;
+  logData(millisec);
+  previousMillis = currentMillis;
+
   if (Serial.available())
   {
     cmd = Serial.read(); // Leitura do comando recebido via serial (USB)
@@ -281,39 +287,29 @@ void ign_estatico()
     switch (cmd)
     {
       case 'A': // Aguardando comando
-        printToSerials("Aguardando comando - " + String(escala.get_units(), 3) + ".");
+        printToSerials(msg);
         break;
       case 'C': // Contagem iniciada
-        printToSerials("Iniciando contagem, salvando dados.");
-        state = true;
-        handleButtonPress();
-        previousMillis = millis();
-        break;
-      case 'D': // Parar de salvar dados
-        printToSerials("Parando de salvar dados.");
-        state = false;
+        printToSerials("Iniciando contagem.");
         break;
       case 'E': // Tarar célula de carga
-        printToSerials("Tarando célula de carga.");
+        printToSerials("Zerando célula.");
         escala.tare();
         break;
+      case 'R': // Reiniciar o esp
+        printToSerials("Reiniciando.");
+        ESP.restart();
+        break;
       case '1': // Rele ativado
-        if (state)
-        {
-          printToSerials("Ativado.");
-          digitalWrite(RELE_PIN, HIGH);
-        }
-        else
-        {
-          printToSerials("Inicie a contagem antes de ativar.");
-        }
+        printToSerials("Ativado.");
+        digitalWrite(RELE_PIN, LOW);
         break;
       case '0': // Rele desativado
         printToSerials("Desativado.");
-        digitalWrite(RELE_PIN, LOW);
+        digitalWrite(RELE_PIN, HIGH);
         break;
       default:
-        // printToSerials("Aguardando comando - " + String(escala.get_units(), 3));
+        printToSerials("Comando desconhecido");
         break;
     }
     cmd = ' ';
@@ -321,13 +317,6 @@ void ign_estatico()
   if (button.getSingleDebouncedPress())
   {
     handleButtonPress();
-  }
-  if (state) // Contagem de tempo e registro de dados em modo de teste estático após comando de contagem
-  {
-    unsigned long currentMillis = millis();
-    unsigned long millisec = currentMillis - previousMillis;
-    logData(millisec);
-    previousMillis = currentMillis;
   }
 }
 
@@ -342,6 +331,7 @@ void ign()
   {
     cmd = SerialBT.read(); // Leitura do comando recebido via Bluetooth
   }
+
   if (cmd != ' ') // Verifica se o comando não está em branco
   {
     switch (cmd)
@@ -351,25 +341,21 @@ void ign()
         break;
       case 'C': // Contagem iniciada
         printToSerials("Iniciando contagem.");
-        state = true;
+        break;
+      case 'R': // Reiniciar o esp
+        printToSerials("Reiniciando.");
+        ESP.restart();
         break;
       case '1': // Rele ativado
-        if (state)
-        {
-          printToSerials("Ativado.");
-          digitalWrite(RELE_PIN, HIGH);
-        }
-        else
-        {
-          printToSerials("Inicie a contagem antes de ativar.");
-        }
+        printToSerials("Ativado.");
+        digitalWrite(RELE_PIN, LOW);
         break;
       case '0': // Rele desativado
         printToSerials("Desativado.");
-        digitalWrite(RELE_PIN, LOW);
+        digitalWrite(RELE_PIN, HIGH);
         break;
       default:
-        // printToSerials("Comando desconhecido.");
+        printToSerials("Comando esconhecido.");
         break;
     }
     cmd = ' ';

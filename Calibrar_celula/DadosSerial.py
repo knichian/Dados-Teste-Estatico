@@ -12,6 +12,6 @@ while True: #Loop principal
     msg = str(com.readline()) #Lê os dados em formato de string
     msg = msg[2:-5] #Fatia a string
     print(msg) #Imprime a mensagem
-    with open('Equipamentos/Dados-Teste-Estatico/Config/Dados.txt', 'a') as file:
+    with open('Dados-Teste-Estatico/Calibrar_celula/Dados.txt', 'a') as file:
         file.write(msg + '\n')
     com.flush() #Limpa a comunicação
