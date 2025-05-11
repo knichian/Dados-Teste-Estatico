@@ -309,7 +309,7 @@ void ign_estatico()
         digitalWrite(RELE_PIN, HIGH);
         break;
       default:
-        printToSerials("Comando desconhecido");
+        printToSerials("Comando desconhecido.");
         break;
     }
     cmd = ' ';
