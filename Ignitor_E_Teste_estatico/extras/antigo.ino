@@ -6,7 +6,7 @@
 #include "SD.h"
 #include "SPI.h"
 #include <Pushbutton.h>
-#include "BluetoothSerial.h" // Biblioteca para Bluetooth
+#include "BluetoothSerial.h" 
 
 // Definições de pinos e constantes
 #define RELE_PIN 25       // Pino de controle do relé
@@ -148,7 +148,7 @@ void logData(unsigned long millisec)
   msg = String(peso, 3) + ";" + String(cont);
   leitura = dataAgora + ";" + msg;
 
-  appendFile(SD, filedir, leitura + "\n");
+  appendFile(SD, filedir, leitura);
 }
 
 String getCurrentDate()
@@ -232,7 +232,7 @@ void appendFile(fs::FS &fs, const String &path, const String &message)
     }
     return;
   }
-  if (file.print(message))
+  if (file.print(message + "\n"))
   {
     digitalWrite(LED_PIN, HIGH);
   }

@@ -8,8 +8,8 @@ Este sistema é composto por quatro componentes principais:
 4. **Verify.ino**: Este código verifica a precisão da célula de carga após a calibração.
 
 - **Config.ino**: Configura o ESP32 para coletar dados da célula de carga e enviá-los via comunicação serial.
-- **DadosSerial.py**: Recebe os dados enviados pelo ESP32 e os processa para análise.
-- **Calibrar.py**: Utiliza os dados processados para calcular o fator de calibração necessário para ajustar a precisão da célula de carga.
+- **DadosSerial.py**: Recebe os dados enviados pelo ESP32 e os salva para análise posterior.
+- **Calibrar.py**: Utiliza os dados salvos para calcular o fator de calibração necessário para ajustar a precisão da célula de carga.
 - **Verify.ino**: Verifica a precisão da célula de carga após a calibração, exibindo as leituras no monitor serial.
 
 ## Passo a Passo para Configurar uma Célula do Zero
