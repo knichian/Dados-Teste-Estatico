@@ -1,22 +1,19 @@
 // INCLUSÃO DE BIBLIOTECAS
 #include <Wire.h>
-#include "RTClib.h"
-#include "HX711.h"
-#include "FS.h"
-#include "SD.h"
-#include "SPI.h"
+#include <RTClib.h>
+#include <HX711.h>
+#include <FS.h>
+#include <SD.h>
+#include <SPI.h>
 #include <Pushbutton.h>
-#include "BluetoothSerial.h"
-
-// INCLUSÃO DE CÓDIGOS
-// #include "Calibrar.h" 
+#include <BluetoothSerial.h>
+#include <esp_now.h>
+#include <WiFi.h>
 
 // Definições de pinos e constantes
 #define LED_PIN 4         // Pino do LED
 #define CS_PIN 5          // Pino do cartão SD
 #define BUZZER_PIN XX     // Pino do buzzer
-#define JUMPER_PIN XX     // Pino do jumper
-#define SELECT_PIN XX     // Pino de seleção de modo
 #define BTN_PIN XX        // Pino do botão
 #define ENC1_PIN XX       // Pino 1 do encoder
 #define ENC2_PIN XX       // Pino 2 do encoder
@@ -37,6 +34,20 @@ bool selectLoop = false;          // Modo de operação
 String dir = "";                  // Diretório
 String filedir = "";              // Arquivo
 String leitura = "";              // Leitura dos dados
+bool espNowPeerReady = false;     // Estado do par ESP-NOW
+
+// Configuração esp-now
+uint8_t enderecoReceptor[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // Endereço MAC do receptor
+
+// Estrutura dos dados a serem enviados. Deve ser a mesma no transmissor e no receptor.
+typedef struct struct_message
+{
+  char data[60]; // Array para armazenar a string de dados "Tempo,Empuxo"
+} struct_message;
+
+// Cria uma instância da estrutura e informações do par
+struct_message minhaMensagem;
+esp_now_peer_info_t peerInfo;
 
 void setup()
 {
@@ -47,44 +58,73 @@ void setup()
   pinMode(LED_PIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(BTN_PIN, INPUT);
-  pinMode(SELECT_PIN, INPUT_PULLUP);
-  pinMode(JUMPER_PIN, INPUT_PULLUP);
 
-  if (digitalRead(JUMPER_PIN) == HIGH)
+  setupESPNow();
+
+  if (setupRTC() && setupSDCard() && setupHX711())
   {
-    printToSerials("Modo de Configuração Ativado");
-    buzzSignal("Ativado");
+    printToSerials("Sistema configurado. Transmitindo...");
+    buzzSignal("Sucesso");
   }
   else
   {
-    selectLoop = digitalRead(SELECT_PIN) == HIGH;
-    if (selectLoop)
-    {
-      if (setupRTC() && setupSDCard() && setupHX711())
-      {
-        printToSerials("Teste estático.");
-        buzzSignal("Sucesso");
-      }
-      else
-      {
-        ESP.restart();
-      }
-    }
-    else
-    {
-      printToSerials("Mostrando dados.");
-    }
+    printToSerials("Falha crítica. Reiniciando...");
+    buzzSignal("Alerta");
+    delay(3000);
+    ESP.restart();
   }
 }
 
 void loop()
 {
-  estatico();
+  staticTest();
   if (button.getSingleDebounced())
   {
     buzzSignal("Beep");
     printToSerials("Célula Zerada!");
     escala.tare();
+  }
+}
+
+// Função de callback ESP-NOW
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
+{
+  Serial.print("\r\nStatus do pacote ESP-NOW: ");
+  if (status == ESP_NOW_SEND_SUCCESS)
+  {
+    Serial.println("Entrega com Sucesso");
+  }
+  else
+  {
+    Serial.println("Falha na Entrega");
+  }
+}
+
+// Função para inicializar o ESP-NOW
+void setupESPNow()
+{
+  WiFi.mode(WIFI_STA);
+  if (esp_now_init() != ESP_OK)
+  {
+    Serial.println("ERRO CRÍTICO: Falha ao inicializar o ESP-NOW.");
+    return; // Sai da função se a inicialização base falhar
+  }
+
+  esp_now_register_send_cb(OnDataSent);
+  memcpy(peerInfo.peer_addr, enderecoReceptor, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  // ALTERADO: Tenta adicionar o par, mas não reinicia em caso de falha
+  if (esp_now_add_peer(&peerInfo) != ESP_OK)
+  {
+    Serial.println("AVISO: Falha ao adicionar o par receptor. O ESP-NOW não transmitirá dados.");
+    espNowPeerReady = false;
+  }
+  else
+  {
+    Serial.println("ESP-NOW OK! Par receptor adicionado com sucesso.");
+    espNowPeerReady = true;
   }
 }
 
@@ -149,11 +189,11 @@ String getCurrentDateTime()
   data.concat(String(now.month(), DEC));
   data.concat('-');
   data.concat(String(now.year(), DEC));
-  data.concat(';');
+  data.concat('_');
   data.concat(String(now.hour(), DEC));
-  data.concat(':');
+  data.concat('-');
   data.concat(String(now.minute(), DEC));
-  data.concat(':');
+  data.concat('-');
   data.concat(String(now.second(), DEC));
 
   return data;
@@ -190,21 +230,31 @@ bool setupSDCard()
 }
 
 // Configuração da célula de carga HX711
-void setupHX711()
+bool setupHX711()
 {
   escala.begin(CELULA_DT_PIN, CELULA_SCK_PIN);
   escala.set_scale(loadFactor);
   escala.tare();
+  if (escala.is_ready())
+  {
+    printToSerials("HX711 conectado");
+    return true;
+  }
+  else
+  {
+    printToSerials("HX711 não encontrado");
+    return false;
+  }
 }
 
 // Função para registrar e imprimir os dados do momento
-// Formato: Empuxo (kg), Tempo (ms)
+// Formato: Tempo (ms), Empuxo (Kg)
 void logData(unsigned long millis)
 {
   float peso = escala.get_units();
-  leitura = String(peso, 3) + "," + String(millis);
-  printtoSerials(leitura);
-  appendFile(SD, filedir, leitura, 'a');
+  leitura = String(millis) + "," + String(peso, 3);
+  printToSerials(leitura);
+  appendFile(SD, filedir, leitura);
 }
 
 // Escrita de dados em um arquivo
@@ -267,11 +317,27 @@ void createDir(fs::FS &fs, const String &path)
 // Função para imprimir na Serial e SerialBT
 void printToSerials(const String &message)
 {
+  // Serial monitor
   Serial.println(message);
+
+  // Serial Bluetooth
   SerialBT.println(message);
+
+  // Envio via ESP-NOW
+  if (espNowPeerReady)
+  {
+    message.toCharArray(minhaMensagem.data, sizeof(minhaMensagem.data));
+    esp_err_t result = esp_now_send(enderecoReceptor, (uint8_t *)&minhaMensagem, sizeof(minhaMensagem));
+
+    if (result != ESP_OK)
+    {
+      Serial.println("ESP-NOW: Erro ao enfileirar pacote para envio.");
+    }
+  }
 }
 
-void estatico()
+// Função de teste estático
+void staticTest()
 {
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis > INTERVALO)
