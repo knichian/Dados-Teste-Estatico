@@ -10,6 +10,8 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
+#include "Pressure.h"
+
 // Definições de pinos e constantes
 #define LED_PIN 4         // Pino do LED
 #define CS_PIN 5          // Pino do cartão SD
@@ -19,16 +21,19 @@
 #define ENC2_PIN XX       // Pino 2 do encoder
 #define CELULA_DT_PIN 26  // Pino de dados da célula de carga
 #define CELULA_SCK_PIN 27 // Pino de clock da célula de carga
+#define PRESSURE_PIN 34   // Pino do sensor de pressão
 #define INTERVALO 100     // Precisão Leitura Dados milissegundos
 
-// Instanciação de objetos
-Pushbutton button(BTN_PIN); // Botão
-RTC_DS3231 rtc;             // Relógio
-HX711 escala;               // Célula de carga
-BluetoothSerial SerialBT;   // Bluetooth
-
 // Variáveis globais
+const float VinPressure = 5.0;    // Tensão que alimenta o sensor
+const float VminPressure = 0.5;   // Tensão de saída em 0 MPa
+const float VmaxPressure = 4.5;   // Tensão de saída em 10 MPa
+const float maxPressure = 10.0;   // Pressão máxima do sensor em MPa
 const float loadFactor = 277306;  // Valor encontrado na calibração
+const float R1 = 10000.0;         // Resistor conectado entre o sensor e o pino do ESP32
+const float R2 = 20000.0;         // Resistor conectado entre o pino do ESP32 e o GND
+const int RESOLUCAO_ADC = 4095;   // ESP32 tem ADC de 12 bits (2^12 - 1)
+const float TENSAO_MAX_ADC = 3.3; // Tensão de referência do ADC do ESP32
 unsigned long previousMillis = 0; // Controle de tempo
 bool selectLoop = false;          // Modo de operação
 String dir = "";                  // Diretório
@@ -48,6 +53,13 @@ typedef struct struct_message
 // Cria uma instância da estrutura e informações do par
 struct_message minhaMensagem;
 esp_now_peer_info_t peerInfo;
+
+// Instanciação de objetos
+Pushbutton button(BTN_PIN); // Botão
+PressureSensor pressureSensor(PRESSURE_PIN, R1, R2, RESOLUCAO_ADC, TENSAO_MAX_ADC, VminPressure, VmaxPressure, maxPressure); // Sensor de pressão
+RTC_DS3231 rtc;             // Relógio
+HX711 escala;               // Célula de carga
+BluetoothSerial SerialBT;   // Bluetooth
 
 void setup()
 {
@@ -248,11 +260,12 @@ bool setupHX711()
 }
 
 // Função para registrar e imprimir os dados do momento
-// Formato: Tempo (ms), Empuxo (Kg)
+// Formato: Tempo (ms), Empuxo (Kg), Pressão (MPa)
 void logData(unsigned long millis)
 {
   float peso = escala.get_units();
-  leitura = String(millis) + "," + String(peso, 3);
+  float pressao = pressureSensor.readMPa(); 
+  leitura = String(millis) + "," + String(peso, 3) + "," + String(pressao, 3);
   printToSerials(leitura);
   appendFile(SD, filedir, leitura);
 }
