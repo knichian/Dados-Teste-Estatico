@@ -53,7 +53,7 @@ def get_samples(com: Receiver, n_samples: int = 10) -> list[int]:
 
     time_between_samples_ms = 1000
 
-    while(com.check_connection() and sample_count < n_samples)
+    while(com.check_connection() and sample_count < n_samples):
 
         start_time_ns = time.time_ns()
 
@@ -74,7 +74,7 @@ def get_samples(com: Receiver, n_samples: int = 10) -> list[int]:
 
     return samples
 
-def get_calibration_factor(samples: list[int], expected_weight:int)
+def get_calibration_factor(samples: list[int], expected_weight: int):
 
     samples_sum = sum(samples)
     samples_amnt = len(samples)
@@ -107,7 +107,7 @@ def choose_port_by_index() -> None:
         try:
             choice = int(input("Digite o número da porta desejada\n-> "))
             break
-        catch ValueError:
+        except ValueError:
             print("ERRO: Valor Inválido!")
 
     return port
