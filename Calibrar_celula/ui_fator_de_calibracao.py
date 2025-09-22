@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'fator_de_calibracao.ui'
+## Form generated from reading UI file 'fator_de_calibracaoRXQvey.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -17,14 +17,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QComboBox, QFormLayout, QFrame,
     QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-    QMainWindow, QMenuBar, QPushButton, QSizePolicy,
-    QSpacerItem, QStatusBar, QVBoxLayout, QWidget)
+    QMainWindow, QPushButton, QSizePolicy, QSpacerItem,
+    QTabWidget, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(701, 717)
+        MainWindow.resize(698, 717)
+        MainWindow.setDocumentMode(False)
+        MainWindow.setTabShape(QTabWidget.TabShape.Rounded)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -40,13 +42,13 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addItem(self.verticalSpacer_2)
 
-        self.frame = QFrame(self.frame_2)
-        self.frame.setObjectName(u"frame")
-        self.frame.setFrameShape(QFrame.Shape.StyledPanel)
-        self.frame.setFrameShadow(QFrame.Shadow.Sunken)
-        self.verticalLayout_2 = QVBoxLayout(self.frame)
+        self.frame_1 = QFrame(self.frame_2)
+        self.frame_1.setObjectName(u"frame_1")
+        self.frame_1.setFrameShape(QFrame.Shape.StyledPanel)
+        self.frame_1.setFrameShadow(QFrame.Shadow.Sunken)
+        self.verticalLayout_2 = QVBoxLayout(self.frame_1)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.label_2 = QLabel(self.frame)
+        self.label_2 = QLabel(self.frame_1)
         self.label_2.setObjectName(u"label_2")
         font = QFont()
         font.setPointSize(16)
@@ -61,29 +63,29 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.label_2, 0, Qt.AlignmentFlag.AlignHCenter)
 
-        self.frame1 = QFrame(self.frame)
-        self.frame1.setObjectName(u"frame1")
-        self.horizontalLayout_2 = QHBoxLayout(self.frame1)
+        self.frame = QFrame(self.frame_1)
+        self.frame.setObjectName(u"frame")
+        self.horizontalLayout_2 = QHBoxLayout(self.frame)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.lineEdit = QLineEdit(self.frame1)
+        self.lineEdit = QLineEdit(self.frame)
         self.lineEdit.setObjectName(u"lineEdit")
         self.lineEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lineEdit.setReadOnly(False)
 
         self.horizontalLayout_2.addWidget(self.lineEdit, 0, Qt.AlignmentFlag.AlignHCenter)
 
-        self.pushButton_3 = QPushButton(self.frame1)
+        self.pushButton_3 = QPushButton(self.frame)
         self.pushButton_3.setObjectName(u"pushButton_3")
 
         self.horizontalLayout_2.addWidget(self.pushButton_3)
 
 
-        self.verticalLayout_2.addWidget(self.frame1, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.verticalLayout_2.addWidget(self.frame, 0, Qt.AlignmentFlag.AlignHCenter)
 
 
-        self.verticalLayout_4.addWidget(self.frame, 0, Qt.AlignmentFlag.AlignHCenter|Qt.AlignmentFlag.AlignVCenter)
+        self.verticalLayout_4.addWidget(self.frame_1, 0, Qt.AlignmentFlag.AlignHCenter)
 
-        self.verticalSpacer = QSpacerItem(20, 55, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(614, 68, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_4.addItem(self.verticalSpacer)
 
@@ -165,19 +167,12 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.pushButton_2)
 
 
-        self.verticalLayout_4.addWidget(self.frame_3)
+        self.verticalLayout_4.addWidget(self.frame_3, 0, Qt.AlignmentFlag.AlignHCenter)
 
 
         self.verticalLayout.addWidget(self.frame_2)
 
         MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QMenuBar(MainWindow)
-        self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 701, 26))
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QStatusBar(MainWindow)
-        self.statusbar.setObjectName(u"statusbar")
-        MainWindow.setStatusBar(self.statusbar)
 #if QT_CONFIG(shortcut)
         self.label_2.setBuddy(self.lineEdit)
         self.label.setBuddy(self.lineEdit_3)
@@ -215,17 +210,4 @@ class Ui_MainWindow(object):
         self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Calcular", None))
         self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"Fechar", None))
     # retranslateUi
-
-if __name__ == "__main__":
-    
-    app = QApplication()
-    
-    main_window = QMainWindow()
-
-    main_ui = Ui_MainWindow()
-    main_ui.setupUi(main_window)
-   
-    main_window.show()
-    app.exec()
-
 

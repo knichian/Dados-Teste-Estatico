@@ -50,7 +50,7 @@
         </spacer>
        </item>
        <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
-        <widget class="QFrame" name="frame">
+        <widget class="QFrame" name="frame_1">
          <property name="frameShape">
           <enum>QFrame::Shape::StyledPanel</enum>
          </property>
@@ -224,7 +224,7 @@
          </property>
         </spacer>
        </item>
-       <item>
+       <item alignment="Qt::AlignmentFlag::AlignHCenter">
         <widget class="QFrame" name="frame_3">
          <property name="frameShape">
           <enum>QFrame::Shape::StyledPanel</enum>
@@ -256,6 +256,9 @@
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -265,7 +268,11 @@
     </rect>
    </property>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+  </widget>
  </widget>
  <tabstops>
   <tabstop>lineEdit</tabstop>
