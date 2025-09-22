@@ -115,8 +115,6 @@ def choose_port_by_index() -> None:
 def main(argv: list[str]) -> int:
 
     # TODO: [x] instantiate comunication interface "com"
-    # TODO: [-] make "choose_port()", it returns "port_chosen"
-    # TODO: [-] make "get_com"
     # TODO: [x] make "print_ports()"
     # TODO: [x] make "list_ports()"
     # TODO: [x] make "choose_port_by_index()"
