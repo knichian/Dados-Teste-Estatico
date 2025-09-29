@@ -9,16 +9,17 @@
 #include <BluetoothSerial.h>
 #include <esp_now.h>
 #include <WiFi.h>
+#include <Preferences.h>
 
 #include "Pressure.h"
 
 // Definições de pinos e constantes
-#define LED_PIN 4         // Pino do LED
-#define CS_PIN 5          // Pino do cartão SD
-#define BUZZER_PIN XX     // Pino do buzzer
-#define BTN_PIN XX        // Pino do botão
-#define ENC1_PIN XX       // Pino 1 do encoder
-#define ENC2_PIN XX       // Pino 2 do encoder
+#define LED_PIN 4     // Pino do LED
+#define CS_PIN 5      // Pino do cartão SD
+#define BUZZER_PIN 32 // Pino do buzzer
+#define BTN_PIN 33    // Pino do botão
+// #define ENC1_PIN XX       // Pino 1 do encoder
+// #define ENC2_PIN XX       // Pino 2 do encoder
 #define CELULA_DT_PIN 26  // Pino de dados da célula de carga
 #define CELULA_SCK_PIN 27 // Pino de clock da célula de carga
 #define PRESSURE_PIN 34   // Pino do sensor de pressão
@@ -29,13 +30,13 @@ const float VinPressure = 5.0;    // Tensão que alimenta o sensor
 const float VminPressure = 0.5;   // Tensão de saída em 0 MPa
 const float VmaxPressure = 4.5;   // Tensão de saída em 10 MPa
 const float maxPressure = 10.0;   // Pressão máxima do sensor em MPa
-const float loadFactor = 277306;  // Valor encontrado na calibração
-const float R1 = 10000.0;         // Resistor conectado entre o sensor e o pino do ESP32
-const float R2 = 20000.0;         // Resistor conectado entre o pino do ESP32 e o GND
+const float R1 = 2200.0;          // Resistor conectado entre o sensor e o pino do ESP32
+const float R2 = 3300.0;          // Resistor conectado entre o pino do ESP32 e o GND
 const int RESOLUCAO_ADC = 4095;   // ESP32 tem ADC de 12 bits (2^12 - 1)
 const float TENSAO_MAX_ADC = 3.3; // Tensão de referência do ADC do ESP32
 unsigned long previousMillis = 0; // Controle de tempo
 bool selectLoop = false;          // Modo de operação
+float loadFactor = 0.0;           // Valor encontrado na calibração
 String dir = "";                  // Diretório
 String filedir = "";              // Arquivo
 String leitura = "";              // Leitura dos dados
@@ -55,11 +56,12 @@ struct_message minhaMensagem;
 esp_now_peer_info_t peerInfo;
 
 // Instanciação de objetos
-Pushbutton button(BTN_PIN); // Botão
+Pushbutton button(BTN_PIN);                                                                                                  // Botão
 PressureSensor pressureSensor(PRESSURE_PIN, R1, R2, RESOLUCAO_ADC, TENSAO_MAX_ADC, VminPressure, VmaxPressure, maxPressure); // Sensor de pressão
-RTC_DS3231 rtc;             // Relógio
-HX711 escala;               // Célula de carga
-BluetoothSerial SerialBT;   // Bluetooth
+RTC_DS3231 rtc;                                                                                                              // Relógio
+HX711 escala;                                                                                                                // Célula de carga
+BluetoothSerial SerialBT;                                                                                                    // Bluetooth
+Preferences preferences;                                                                                                     // Preferências salvas
 
 void setup()
 {
@@ -67,11 +69,14 @@ void setup()
   Serial.begin(115200);
   SerialBT.begin("ESP32_BT");
 
+  preferences.begin("app", false);
+  loadFactor = preferences.getFloat("loadFactor", 277306.0);
+
   pinMode(LED_PIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(BTN_PIN, INPUT);
 
-  setupESPNow();
+  // setupESPNow();
 
   if (setupRTC() && setupSDCard() && setupHX711())
   {
@@ -90,16 +95,68 @@ void setup()
 void loop()
 {
   staticTest();
-  if (button.getSingleDebounced())
+  if (button.getSingleDebouncedPress())
   {
     buzzSignal("Beep");
     printToSerials("Célula Zerada!");
     escala.tare();
   }
+
+  if (Serial.available())
+  {
+    String command = Serial.readStringUntil('\n');
+    command.trim(); // Remove espaços e quebras de linha
+    if (command.startsWith("INIT CONFIG"))
+    {
+      escala.tare();
+      bool configurado = false;
+
+      while (!configurado)
+      {
+        if (Serial.available())
+        {
+          String loadCommand = Serial.readStringUntil('\n');
+          loadCommand.trim();
+
+          if (loadCommand.startsWith("SET LOAD FACTOR"))
+          {
+            int lastSpaceIndex = loadCommand.lastIndexOf(' ');
+            if (lastSpaceIndex != -1)
+            {
+              String factorStr = loadCommand.substring(lastSpaceIndex + 1);
+              float factor = factorStr.toFloat();
+              if (factor > 0)
+              {
+                setLoadFactor(factor);
+                configurado = true; // Sai do loop
+              }
+              else
+              {
+                printToSerials("Valor inválido. Tente novamente.");
+                buzzSignal("Alerta");
+              }
+            }
+          }
+        }
+        Serial.println(escala.get_value(1), 0); 
+        delay(100);
+      }
+    }
+  }
+}
+// Configuração do fator de carga
+void setLoadFactor(float factor)
+{
+  loadFactor = factor;
+  escala.set_scale(loadFactor);
+  preferences.putFloat("loadFactor", loadFactor);
+  printToSerials("Fator de carga atualizado: " + String(loadFactor, 2));
+  buzzSignal("Sucesso");
 }
 
+// VERSÃO ALTERNATIVA (use apenas se a primeira não funcionar)
 // Função de callback ESP-NOW
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
+void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status)
 {
   Serial.print("\r\nStatus do pacote ESP-NOW: ");
   if (status == ESP_NOW_SEND_SUCCESS)
@@ -127,7 +184,6 @@ void setupESPNow()
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
 
-  // ALTERADO: Tenta adicionar o par, mas não reinicia em caso de falha
   if (esp_now_add_peer(&peerInfo) != ESP_OK)
   {
     Serial.println("AVISO: Falha ao adicionar o par receptor. O ESP-NOW não transmitirá dados.");
@@ -247,16 +303,9 @@ bool setupHX711()
   escala.begin(CELULA_DT_PIN, CELULA_SCK_PIN);
   escala.set_scale(loadFactor);
   escala.tare();
-  if (escala.is_ready())
-  {
-    printToSerials("HX711 conectado");
-    return true;
-  }
-  else
-  {
-    printToSerials("HX711 não encontrado");
-    return false;
-  }
+
+  printToSerials("HX711 conectado");
+  return true;
 }
 
 // Função para registrar e imprimir os dados do momento
@@ -264,8 +313,8 @@ bool setupHX711()
 void logData(unsigned long millis)
 {
   float peso = escala.get_units();
-  float pressao = pressureSensor.readMPa(); 
-  leitura = String(millis) + "," + String(peso, 3) + "," + String(pressao, 3);
+  float pressao = pressureSensor.readPSI();
+  leitura = String(millis) + "," + String(peso, 6) + "," + String(pressao, 6);
   printToSerials(leitura);
   appendFile(SD, filedir, leitura);
 }
@@ -332,21 +381,6 @@ void printToSerials(const String &message)
 {
   // Serial monitor
   Serial.println(message);
-
-  // Serial Bluetooth
-  SerialBT.println(message);
-
-  // Envio via ESP-NOW
-  if (espNowPeerReady)
-  {
-    message.toCharArray(minhaMensagem.data, sizeof(minhaMensagem.data));
-    esp_err_t result = esp_now_send(enderecoReceptor, (uint8_t *)&minhaMensagem, sizeof(minhaMensagem));
-
-    if (result != ESP_OK)
-    {
-      Serial.println("ESP-NOW: Erro ao enfileirar pacote para envio.");
-    }
-  }
 }
 
 // Função de teste estático
