@@ -16,18 +16,18 @@
 // Definições de pinos e constantes
 #define LED_PIN 4     // Pino do LED
 #define CS_PIN 5      // Pino do cartão SD
-#define BUZZER_PIN 32 // Pino do buzzer
-#define BTN_PIN 33    // Pino do botão
+#define BUZZER_PIN 33 // Pino do buzzer
+#define BTN_PIN 32    // Pino do botão
 // #define ENC1_PIN XX       // Pino 1 do encoder
 // #define ENC2_PIN XX       // Pino 2 do encoder
 #define CELULA_DT_PIN 26  // Pino de dados da célula de carga
 #define CELULA_SCK_PIN 27 // Pino de clock da célula de carga
-#define PRESSURE_PIN 34   // Pino do sensor de pressão
+#define PRESSURE_PIN 35   // Pino do sensor de pressão
 #define INTERVALO 100     // Precisão Leitura Dados milissegundos
 
 // Variáveis globais
 const float VinPressure = 5.0;    // Tensão que alimenta o sensor
-const float VminPressure = 0.5;   // Tensão de saída em 0 MPa
+const float VminPressure = 0.27;   // Tensão de saída em 0 MPa
 const float VmaxPressure = 4.5;   // Tensão de saída em 10 MPa
 const float maxPressure = 10.0;   // Pressão máxima do sensor em MPa
 const float R1 = 2200.0;          // Resistor conectado entre o sensor e o pino do ESP32
@@ -125,7 +125,7 @@ void loop()
             {
               String factorStr = loadCommand.substring(lastSpaceIndex + 1);
               float factor = factorStr.toFloat();
-              if (factor > 0)
+              if (!isnan(factor))
               {
                 setLoadFactor(factor);
                 configurado = true; // Sai do loop
@@ -138,12 +138,13 @@ void loop()
             }
           }
         }
-        Serial.println(escala.get_value(1), 0); 
+        Serial.println(escala.get_value(1), 0);
         delay(100);
       }
     }
   }
 }
+
 // Configuração do fator de carga
 void setLoadFactor(float factor)
 {
@@ -154,7 +155,6 @@ void setLoadFactor(float factor)
   buzzSignal("Sucesso");
 }
 
-// VERSÃO ALTERNATIVA (use apenas se a primeira não funcionar)
 // Função de callback ESP-NOW
 void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status)
 {
@@ -309,12 +309,12 @@ bool setupHX711()
 }
 
 // Função para registrar e imprimir os dados do momento
-// Formato: Tempo (ms), Empuxo (Kg), Pressão (MPa)
+// Formato: Tempo (ms), Empuxo (Kg), Pressão (ADC)
 void logData(unsigned long millis)
 {
   float peso = escala.get_units();
-  float pressao = pressureSensor.readPSI();
-  leitura = String(millis) + "," + String(peso, 6) + "," + String(pressao, 6);
+  float pressao = pressureSensor.readADC();
+  leitura = String(millis) + "," + String(peso, 6) + "," + String(pressao);
   printToSerials(leitura);
   appendFile(SD, filedir, leitura);
 }
@@ -381,6 +381,7 @@ void printToSerials(const String &message)
 {
   // Serial monitor
   Serial.println(message);
+  SerialBT.println(message);
 }
 
 // Função de teste estático
