@@ -27,13 +27,14 @@
 
 // Variáveis globais
 const float VinPressure = 5.0;    // Tensão que alimenta o sensor
-const float VminPressure = 0.27;   // Tensão de saída em 0 MPa
+const float VminPressure = 0.27;  // Tensão de saída em 0 MPa
 const float VmaxPressure = 4.5;   // Tensão de saída em 10 MPa
 const float maxPressure = 10.0;   // Pressão máxima do sensor em MPa
 const float R1 = 2200.0;          // Resistor conectado entre o sensor e o pino do ESP32
 const float R2 = 3300.0;          // Resistor conectado entre o pino do ESP32 e o GND
 const int RESOLUCAO_ADC = 4095;   // ESP32 tem ADC de 12 bits (2^12 - 1)
 const float TENSAO_MAX_ADC = 3.3; // Tensão de referência do ADC do ESP32
+float maxDatas[2];                // Vetor leituras de pico (peso, pressão)
 unsigned long previousMillis = 0; // Controle de tempo
 bool selectLoop = false;          // Modo de operação
 float loadFactor = 0.0;           // Valor encontrado na calibração
@@ -314,6 +315,17 @@ void logData(unsigned long millis)
 {
   float peso = escala.get_units();
   float pressao = pressureSensor.readADC();
+
+  if (peso > maxDatas[0])
+  {
+    maxDatas[0] = peso;
+  }
+
+  if (pressao > maxDatas[1])
+  {
+    maxDatas[1] = pressao;
+  }
+
   leitura = String(millis) + "," + String(peso, 6) + "," + String(pressao);
   printToSerials(leitura);
   appendFile(SD, filedir, leitura);
