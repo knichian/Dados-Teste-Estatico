@@ -34,7 +34,7 @@ const float R1 = 2200.0;          // Resistor conectado entre o sensor e o pino 
 const float R2 = 3300.0;          // Resistor conectado entre o pino do ESP32 e o GND
 const int RESOLUCAO_ADC = 4095;   // ESP32 tem ADC de 12 bits (2^12 - 1)
 const float TENSAO_MAX_ADC = 3.3; // Tensão de referência do ADC do ESP32
-float maxDatas[2];                // Vetor leituras de pico (peso, pressão)
+float maxValues[2];                // Vetor leituras de pico (peso, pressão)
 unsigned long previousMillis = 0; // Controle de tempo
 bool selectLoop = false;          // Modo de operação
 float loadFactor = 0.0;           // Valor encontrado na calibração
@@ -316,14 +316,14 @@ void logData(unsigned long millis)
   float peso = escala.get_units();
   float pressao = pressureSensor.readADC();
 
-  if (peso > maxDatas[0])
+  if (peso > maxValues[0])
   {
-    maxDatas[0] = peso;
+    maxValues[0] = peso;
   }
 
-  if (pressao > maxDatas[1])
+  if (pressao > maxValues[1])
   {
-    maxDatas[1] = pressao;
+    maxValues[1] = pressao;
   }
 
   leitura = String(millis) + "," + String(peso, 6) + "," + String(pressao);
