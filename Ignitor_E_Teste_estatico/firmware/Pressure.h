@@ -29,6 +29,11 @@ public:
         return readMPa() * 145.038;
     }
 
+    int readADC(){
+        int adcValue = analogRead(_pin);
+        return adcValue;
+    }
+
 private:
     uint8_t _pin;
     float _resistor1, _resistor2;
