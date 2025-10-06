@@ -1,16 +1,5 @@
-from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
-    QMetaObject, QObject, QPoint, QRect,
-    QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QFormLayout, QFrame,
-    QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-    QMainWindow, QMenuBar, QPushButton, QSizePolicy,
-    QSpacerItem, QStatusBar, QVBoxLayout, QWidget)
-
-from fator_de_calibracao_cli import get_calibration_factor, list_ports, get_samples, Receiver
+from PySide6.QtWidgets import (QApplication, QMainWindow)
+from fator_de_calibracao_cli import get_calibration_factor, list_ports, Receiver
 from ui_fator_de_calibracao import Ui_MainWindow
 
 import sys
@@ -19,7 +8,7 @@ def extend_ui(ui):
 
     dummy_elements = False
     global com
-    com = None
+    # com = None
 
     def update_port_list():
         ports = list_ports()
@@ -56,7 +45,16 @@ def extend_ui(ui):
 
     def send_factor():
         print(f"{com=}")
-        com.send_command(b'SET LOAD FACTOR ' + bytes(str(ui.line_edit_fator.text()).encode()) + b'\n')    
+        fator = ui.line_edit_fator.text().strip()
+        fator = fator.replace(',', '.')
+        comma = f'SET LOAD FACTOR {fator}\n'
+        # print("->",repr(comma.encode('utf-8')))
+        print(f"-> {comma.strip()}")
+        com.serial.write(comma.encode('utf-8'))    
+        # com.serial.flushInput()
+        # com.serial.flushOutput()
+        response = com.read_response()
+        print(response)
         i = 0
         while i < 10:
            print(com.read_response()) 
@@ -74,7 +72,7 @@ def extend_ui(ui):
         if expected_weight == '':
             return -1
 
-        calibration_factor = get_calibration_factor(samples, float(expected_weight))
+        calibration_factor = get_calibration_factor(samples, int(expected_weight))
 
         ui.line_edit_fator.setText(str(calibration_factor))
 

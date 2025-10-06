@@ -10,7 +10,7 @@ class Receiver():
             self,
             port: str,
             baudrate: int = 115200,
-            timeout: float = 1
+            timeout: float = 0.1,
         ):
 
         self.port = port
@@ -18,7 +18,7 @@ class Receiver():
         self.timeout = timeout
 
         try:
-            self.serial = serial.Serial(
+            self.serial:serial.Serial = serial.Serial(
                 port=port,
                 baudrate=baudrate,
                 timeout=timeout,
@@ -31,7 +31,7 @@ class Receiver():
         except serial.SerialException as e:
             print(f'WARNING: Serial Exception')
             print(e)
-            self.serial = None
+            # self.serial = None
             raise
 
     def read_response(self):
@@ -58,7 +58,7 @@ def get_samples(com: Receiver, n_samples: int = 10) -> list[int]:
         start_time_ns = time.time_ns()
 
         response = int(com.read_response())
-        datapoints.append(response)
+        samples.append(response)
         sample_count+=1
         print(f"Sample {sample_count}: {response}")
 
@@ -84,7 +84,7 @@ def get_calibration_factor(samples: list[int], expected_weight: int):
 
     return calibration_factor
 
-def list_ports() -> list[any]:
+def list_ports():
     if sys.platform.startswith('win'):  # For Windows
         return [port.device for port in serial.tools.list_ports.comports()]
     elif sys.platform.startswith(('linux', 'cygwin')):  # For Linux and Cygwin
@@ -99,18 +99,21 @@ def print_ports() -> None:
     for idx, port in enumerate(ports):
         print(f"({idx}) {port}")
 
-def choose_port_by_index() -> None:
+def choose_port_by_index():
 
     print_ports()
 
     while True:
+
         try:
+            ports = list_ports() 
             choice = int(input("Digite o número da porta desejada\n-> "))
-            break
+            port = ports[choice]
+            return port
+
         except ValueError:
             print("ERRO: Valor Inválido!")
-
-    return port
+            return 'ERROR!!!'
 
 def main(argv: list[str]) -> int:
 
