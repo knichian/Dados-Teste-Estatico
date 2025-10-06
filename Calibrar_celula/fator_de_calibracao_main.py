@@ -1,8 +1,36 @@
 from PySide6.QtWidgets import (QApplication, QMainWindow)
-from fator_de_calibracao_cli import get_calibration_factor, list_ports, Receiver
-from ui_fator_de_calibracao import Ui_MainWindow
+# from fator_de_calibracao_cli import get_calibration_factor, list_ports, Receiver
+# from ui_fator_de_calibracao import Ui_MainWindow
+import fator_de_calibracao_cli as fact_cli
+import ui_fator_de_calibracao as fact_ui
+import logging
 
-import sys
+# import sys
+
+class Calibrator:
+
+    def __init__(self):
+
+        self.app = QApplication()
+        self.window = QMainWindow()
+        self.ui = fact_ui.Ui_MainWindow()
+
+        self.logger = logging.getLogger('Calibrator')
+
+        self.ui.setupUi(self.window)
+        self.extend_ui()
+
+        self.window.show()
+        self.app.exec()
+
+    def extend_ui(self):
+        self.dummy_elements: bool = False
+        ...
+
+    def connect_esp(self):
+        
+        ...
+
 
 def extend_ui(ui):
 
@@ -11,12 +39,12 @@ def extend_ui(ui):
     # com = None
 
     def update_port_list():
-        ports = list_ports()
+        ports = fact_cli.list_ports()
         ui.cbox_seriais.clear()
         ui.cbox_seriais.addItems(['dummy-data-4', 'dummy-data-5', 'dummy-data-6',]) if dummy_elements else None 
         ui.cbox_seriais.addItems(ports)
 
-    def get_samples_with_progress(com: Receiver, n_samples: int = 100):
+    def get_samples_with_progress(com: fact_cli.Receiver, n_samples: int = 100):
 
         print("get_sample_with_progress()") if dummy_elements else None 
         samples = []
@@ -38,7 +66,7 @@ def extend_ui(ui):
         port = str(ui.cbox_seriais.currentText())
         print(f"{port=}")
         global com
-        com = Receiver(port)
+        com = fact_cli.Receiver(port)
         print(f"{com=}")
         com.send_command(b'INIT CONFIG\n')
         ui.display_status.setText('Conectado')
@@ -72,11 +100,11 @@ def extend_ui(ui):
         if expected_weight == '':
             return -1
 
-        calibration_factor = get_calibration_factor(samples, int(expected_weight))
+        calibration_factor = fact_cli.get_calibration_factor(samples, int(expected_weight))
 
         ui.line_edit_fator.setText(str(calibration_factor))
 
-    ports = list_ports()
+    ports = fact_cli.list_ports()
     ui.cbox_seriais.addItems(['dummy-data-1', 'dummy-data-2', 'dummy-data-3',]) if dummy_elements else None 
     ui.cbox_seriais.addItems(ports)
     
@@ -88,12 +116,14 @@ def extend_ui(ui):
 
 if __name__ == '__main__':
 
-    app = QApplication(sys.argv)
-    window = QMainWindow()
+    # app = QApplication(sys.argv)
+    # window = QMainWindow()
 
-    ui = Ui_MainWindow()
-    ui.setupUi(window)
-    extend_ui(ui)
+    # ui = fact_ui.Ui_MainWindow()
+    # ui.setupUi(window)
+    # extend_ui(ui)
 
-    window.show()
-    app.exec()
+    # window.show()
+    # app.exec()
+
+    Calibrator()
